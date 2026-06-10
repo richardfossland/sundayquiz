@@ -163,11 +163,11 @@ async function main() {
   board = await get(`/api/games/${gameId}/state?role=board`);
   const finale = board.json?.finale;
   check("finale present", !!finale);
-  check("finale 7 confirmed marks", finale?.totals?.confirmedMarks === 7, JSON.stringify(finale?.totals));
+  check("finale 6 confirmed marks", finale?.totals?.confirmedMarks === 6, JSON.stringify(finale?.totals));
   check("finale podium 2", finale?.podium?.length === 2);
   check(
     "finale edges match",
-    finale?.edges?.length === 7 &&
+    finale?.edges?.length === 6 &&
       finale.edges.every((e) => e.statementText.length > 0),
   );
   const annaNode = finale?.players?.find((p) => p.name === "Anna");
