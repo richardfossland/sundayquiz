@@ -25,7 +25,6 @@ export function PlayerGame({
   const [toast, setToast] = useState<{ text: string; gold?: boolean } | null>(null);
   const [pickerCell, setPickerCell] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState<number | null>(null); // bingo rank
-  const seenBingoRank = useRef<number | null>(null);
   const lostRef = useRef(onSessionLost);
   useEffect(() => {
     lostRef.current = onSessionLost;
@@ -66,16 +65,27 @@ export function PlayerGame({
     },
   );
 
-  // Celebrate own bingo exactly once (state-driven, so it also fires after a
-  // reconnect that happened mid-celebration window — but only on transition).
+  // Celebrate own bingo exactly once per achieved rank — persisted so a reload
+  // or reconnect of an already-won board does NOT re-trigger the overlay.
+  const celebratedKey = `quiz:celebrated:${player.gameId}:${player.playerId}`;
   useEffect(() => {
     const rank = state?.board?.bingoRank ?? null;
-    if (rank !== null && seenBingoRank.current === null) {
-      setCelebrate(rank);
-      window.setTimeout(() => setCelebrate(null), 4200);
-    }
-    seenBingoRank.current = rank;
-  }, [state?.board?.bingoRank]);
+    if (rank === null) return;
+    let already: string | null = null;
+    try {
+      already = localStorage.getItem(celebratedKey);
+    } catch {}
+    if (already === String(rank)) return;
+    try {
+      localStorage.setItem(celebratedKey, String(rank));
+    } catch {}
+    // Firing a one-shot celebration on a server-state transition — not a
+    // cascading render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCelebrate(rank);
+    const tid = window.setTimeout(() => setCelebrate(null), 4200);
+    return () => window.clearTimeout(tid);
+  }, [state?.board?.bingoRank, celebratedKey]);
 
   usePresence(player.gameId, {
     playerId: player.playerId,
@@ -113,6 +123,21 @@ export function PlayerGame({
         <LiveBoard
           state={state}
           onTapCell={(i) => setPickerCell(i)}
+          onCancelOutgoing={async () => {
+            const markId = state.outgoing?.markId;
+            if (!markId) return;
+            try {
+              await api.cancelMark({
+                gameId: player.gameId,
+                playerId: player.playerId,
+                code: player.resumeCode,
+                markId,
+              });
+            } catch (err) {
+              showToast(errorText((err as Error).message));
+            }
+            void refetch();
+          }}
         />
       )}
       {state.status === "finished" && <FinishedSummary state={state} />}
@@ -131,7 +156,10 @@ export function PlayerGame({
                 markId: incoming.markId,
                 accept,
               });
-              if (res.bingo) {
+              if (res.status === "expired") {
+                // the prompt timed out before we answered
+                showToast(t.promptGone);
+              } else if (res.bingo) {
                 // the claimer got bingo off our confirmation — fun to know
                 showToast(t.bingoRank(res.bingo.rank), true);
               }
@@ -206,9 +234,11 @@ function LobbyWait({ state }: { state: PlayerState }) {
 function LiveBoard({
   state,
   onTapCell,
+  onCancelOutgoing,
 }: {
   state: PlayerState;
   onTapCell: (index: number) => void;
+  onCancelOutgoing: () => void;
 }) {
   if (!state.board) {
     return <p className="muted">{no.common.loading}</p>;
@@ -218,12 +248,19 @@ function LiveBoard({
 
   return (
     <div className="stack">
-      <p className="muted" style={{ fontSize: 14.5 }}>{t.tapToClaim}</p>
+      <p className="muted" style={{ fontSize: 14.5 }}>
+        {hasOutgoing ? t.tapToCancel : t.tapToClaim}
+      </p>
       <div className={`bingo-grid g${grid}`}>
         {state.board.cells.map((cell) => {
           if (cell.free) {
             return (
-              <button key={cell.index} className="bingo-cell free" disabled>
+              <button
+                key={cell.index}
+                className="bingo-cell free"
+                disabled
+                aria-label={`${t.freeCell} — alltid markert`}
+              >
                 {t.freeCell} ✓
               </button>
             );
@@ -236,30 +273,32 @@ function LiveBoard({
             : isPendingHere || mark?.status === "pending"
               ? "pending"
               : "";
-          const blocked =
-            mark !== null || (hasOutgoing && !isPendingHere);
+          const confirmed = mark?.status === "confirmed";
+          const waitingName =
+            mark?.verifierName ?? state.outgoing?.verifierName ?? "…";
+          const label = confirmed
+            ? `${cell.text} — ${t.confirmedBy(mark!.verifierName)}`
+            : isPendingHere
+              ? `${cell.text} — ${t.waitingFor(waitingName)}, trykk for å avbryte`
+              : mark?.status === "pending"
+                ? `${cell.text} — ${t.waitingFor(waitingName)}`
+                : cell.text;
           return (
             <button
               key={cell.index}
               className={`bingo-cell ${cls}`}
-              disabled={mark?.status === "confirmed"}
+              disabled={confirmed}
               onClick={() => {
-                if (mark === null && !hasOutgoing) onTapCell(cell.index);
+                if (isPendingHere) onCancelOutgoing();
+                else if (mark === null && !hasOutgoing) onTapCell(cell.index);
               }}
-              aria-disabled={blocked}
+              aria-label={label}
             >
               <span>{cell.text}</span>
-              {mark?.status === "confirmed" && (
-                <span className="who">✓ {mark.verifierName}</span>
+              {confirmed && <span className="who">✓ {mark!.verifierName}</span>}
+              {(isPendingHere || mark?.status === "pending") && !confirmed && (
+                <span className="who">{t.waitingFor(waitingName)}</span>
               )}
-              {(isPendingHere || mark?.status === "pending") &&
-                mark?.status !== "confirmed" && (
-                  <span className="who">
-                    {t.waitingFor(
-                      mark?.verifierName ?? state.outgoing?.verifierName ?? "…",
-                    )}
-                  </span>
-                )}
             </button>
           );
         })}

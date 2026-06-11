@@ -61,6 +61,7 @@ export const no = {
   game: {
     yourBoard: "Brettet ditt",
     tapToClaim: "Trykk på en rute når du har funnet noen den stemmer for.",
+    tapToCancel: "Venter på svar — trykk på ruta for å avbryte og prøve en annen.",
     pickPerson: "Hvem stemmer det for?",
     pickPersonHint: "Velg personen du snakket med — de bekrefter på sin mobil.",
     searchPlaceholder: "Søk på navn …",
@@ -73,6 +74,7 @@ export const no = {
     promptYes: "Ja, det stemmer",
     promptNo: "Nei",
     promptQueued: (n: number) => `+${n} til venter`,
+    promptGone: "Forespørselen var utløpt — den andre prøver nok igjen.",
     notConfirmed: "Ikke bekreftet — prøv igjen eller spør noen andre.",
     expired: "Ingen respons — prøv igjen eller spør noen andre.",
     confirmedBy: (name: string) => `bekreftet av ${name}`,

@@ -95,6 +95,13 @@ export const api = {
       args,
     ),
 
+  cancelMark: (args: {
+    gameId: string;
+    playerId: string;
+    code: string;
+    markId: string;
+  }) => post<{ ok: true }>("/api/mark/cancel", args),
+
   startGame: (gameId: string, hostCode: string, hostPlays?: { displayName: string }) =>
     post<{ ok: true; playerId?: string; resumeCode?: string }>(
       `/api/games/${gameId}/start`,

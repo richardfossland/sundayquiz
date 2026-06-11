@@ -5,7 +5,11 @@ import {
   buildHostState,
   buildPlayerState,
 } from "@/lib/server/state";
-import { expireStaleMarks } from "@/lib/server/store";
+import {
+  createBoards,
+  expireStaleMarks,
+  getBoardForPlayer,
+} from "@/lib/server/store";
 import { broadcast } from "@/lib/server/broadcast";
 import { channels, events } from "@/lib/realtime";
 import { GameRow } from "@/lib/types";
@@ -61,5 +65,16 @@ export async function POST(req: Request, { params }: Params) {
 
   const player = await requirePlayer(game, body?.playerId, body?.code);
   if (!player) return fail(403, "forbidden");
+
+  // Self-heal: a player who joined in the lobby but slipped through the
+  // start-transition race (joined as 'lobby' just as the host flipped to
+  // 'live') can end up live with no board. Generate it on first read so they
+  // are never stranded on the loading spinner. Idempotent (upsert ignores an
+  // existing board).
+  if (game.status === "live" && player.status === "active") {
+    const board = await getBoardForPlayer(game.id, player.id);
+    if (!board) await createBoards(game, [player.id]);
+  }
+
   return ok(await buildPlayerState(game, player));
 }

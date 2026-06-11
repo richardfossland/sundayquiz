@@ -75,7 +75,9 @@ export async function createGame(input: CreateGameInput): Promise<{
   let setId: string;
   if ("id" in input.statementSet) {
     const set = await getStatementSet(input.statementSet.id);
-    if (!set) throw new Error("set_not_found");
+    // Only bundled / non-game-local sets may be referenced by id; this blocks
+    // binding a board to another game's private custom set.
+    if (!set || set.game_id !== null) throw new Error("set_not_found");
     setId = set.id;
   } else {
     const { data: set, error } = await client
@@ -359,6 +361,27 @@ export async function rpcRespondMark(args: {
   });
   if (error) throw new Error(error.message);
   return data as RespondResult;
+}
+
+/** Cancel one's OWN pending mark (claimer action) — frees the cell so they can
+ * try a different person without waiting out the 60s timeout. Scoped to the
+ * caller's own pending marks; returns null if it wasn't theirs/pending. */
+export async function cancelOwnMark(args: {
+  gameId: string;
+  claimerId: string;
+  markId: string;
+}): Promise<MarkRow | null> {
+  const { data, error } = await db()
+    .from("marks")
+    .update({ status: "expired", resolved_at: new Date().toISOString() })
+    .eq("id", args.markId)
+    .eq("game_id", args.gameId)
+    .eq("claimer_id", args.claimerId)
+    .eq("status", "pending")
+    .select()
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as MarkRow) ?? null;
 }
 
 /** Force-expire a single pending mark (host action) or all pendings touching a

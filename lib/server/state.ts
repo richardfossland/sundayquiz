@@ -16,6 +16,7 @@ import {
 } from "@/lib/dto";
 import { BoardRow, GameRow, MarkRow, PlayerRow, isFreeCell } from "@/lib/types";
 import { listBoards, listMarks, listPlayers } from "@/lib/server/store";
+import { cellsNeeded } from "@/lib/server/boards";
 
 const TICKER_SIZE = 20;
 
@@ -101,8 +102,20 @@ export async function buildBoardState(game: GameRow): Promise<BoardState> {
   ]);
   const names = nameMap(players);
   const confirmed = marks.filter((m) => m.status === "confirmed");
-  const gridTotal = game.config.gridSize * game.config.gridSize;
-  const activeBoards = boards.length;
+  // Progress is "fillable cells across active players' boards". Exclude boards
+  // of players who left/were kicked (so the bar can still reach 100%), and
+  // exclude the free centre (it is never a confirmed mark) from the per-board
+  // ceiling so blackout games top out correctly.
+  const activePlayerIds = new Set(
+    players.filter((p) => p.status === "active").map((p) => p.id),
+  );
+  const activeBoardIds = new Set(
+    boards.filter((b) => activePlayerIds.has(b.player_id)).map((b) => b.id),
+  );
+  const fillablePerBoard = cellsNeeded(game.config.gridSize, game.config.freeCentre);
+  const confirmedOnActive = confirmed.filter((m) =>
+    activeBoardIds.has(m.board_id),
+  ).length;
 
   const ticker: TickerItem[] = confirmed
     .slice(-TICKER_SIZE)
@@ -121,7 +134,10 @@ export async function buildBoardState(game: GameRow): Promise<BoardState> {
     config: game.config,
     joinPin: game.join_pin,
     roster: rosterOf(players),
-    progress: { confirmed: confirmed.length, totalCells: activeBoards * gridTotal },
+    progress: {
+      confirmed: confirmedOnActive,
+      totalCells: activeBoardIds.size * fillablePerBoard,
+    },
     ticker,
     podium: podiumOf(boards, players, game),
     finale:

@@ -119,6 +119,41 @@ async function main() {
   check("cell reclaimable after reject", m1b.status === 200, JSON.stringify(m1b.json));
   await respond("Clara", m1b.json.markId, true);
 
+  // 7b. Cancel path: Anna claims cell8 against Vert, then cancels her own
+  // pending → cell frees (the Anna↔Vert pair stays at 0 confirmed).
+  const cm = await claim("Anna", 8, "Vert");
+  check("claim for cancel", cm.status === 200, JSON.stringify(cm.json));
+  const cn = await post("/api/mark/cancel", {
+    gameId,
+    playerId: players["Anna"].playerId,
+    code: players["Anna"].resumeCode,
+    markId: cm.json.markId,
+  });
+  check("cancel own pending", cn.status === 200);
+  const annaAfterCancel = await pstate("Anna");
+  check(
+    "cancelled cell tappable again",
+    annaAfterCancel.json?.board?.cells?.[8]?.mark === null,
+    JSON.stringify(annaAfterCancel.json?.board?.cells?.[8]),
+  );
+  // David claims against Vert; Anna cannot cancel a pending that isn't hers.
+  const foreign = await claim("David", 5, "Vert");
+  check("foreign claim pending", foreign.status === 200, JSON.stringify(foreign.json));
+  const badCancel = await post("/api/mark/cancel", {
+    gameId,
+    playerId: players["Anna"].playerId,
+    code: players["Anna"].resumeCode,
+    markId: foreign.json.markId,
+  });
+  const davidState = await pstate("David");
+  check(
+    "cannot cancel another player's pending",
+    badCancel.status === 200 &&
+      davidState.json?.board?.cells?.[5]?.mark?.status === "pending",
+    JSON.stringify(davidState.json?.board?.cells?.[5]),
+  );
+  await respond("Vert", foreign.json.markId, true); // David↔Vert confirmed
+
   // 8. Third confirm completes row 0 → bingo rank 1.
   const m2 = await claim("Anna", 2, "David");
   const r2 = await respond("David", m2.json.markId, true);
@@ -163,11 +198,11 @@ async function main() {
   board = await get(`/api/games/${gameId}/state?role=board`);
   const finale = board.json?.finale;
   check("finale present", !!finale);
-  check("finale 6 confirmed marks", finale?.totals?.confirmedMarks === 6, JSON.stringify(finale?.totals));
+  check("finale 7 confirmed marks", finale?.totals?.confirmedMarks === 7, JSON.stringify(finale?.totals));
   check("finale podium 2", finale?.podium?.length === 2);
   check(
     "finale edges match",
-    finale?.edges?.length === 6 &&
+    finale?.edges?.length === 7 &&
       finale.edges.every((e) => e.statementText.length > 0),
   );
   const annaNode = finale?.players?.find((p) => p.name === "Anna");
