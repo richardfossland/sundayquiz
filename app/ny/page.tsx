@@ -8,6 +8,7 @@ import { identity } from "@/lib/client/identity";
 import { StatementSetSummary } from "@/lib/dto";
 import { Audience, DEFAULT_CONFIG, GridSize, WinCondition } from "@/lib/types";
 import { no } from "@/lib/locale/no";
+import { QuizWizard } from "./QuizWizard";
 
 const t = no.wizard;
 
@@ -19,7 +20,42 @@ interface CustomSet {
   statements: string[];
 }
 
+// Entry point: pick a game mode (the platform now ships two — bingo and the
+// namesake quiz), then run the mode's wizard.
 export default function NewGameWizard() {
+  const [mode, setMode] = useState<"bingo" | "quiz" | null>(null);
+  if (mode === "quiz") return <QuizWizard onBack={() => setMode(null)} />;
+  if (mode === "bingo") return <BingoWizard />;
+  return (
+    <main className="center-screen" style={{ alignItems: "flex-start", paddingTop: 40 }}>
+      <div className="stack" style={{ width: "100%", maxWidth: 620 }}>
+        <div className="spread">
+          <Link href="/" className="brandmark">
+            <span className="glyph">▦</span>Sunday<b>Quiz</b>
+          </Link>
+          <span className="muted" style={{ fontSize: 14 }}>{t.title}</span>
+        </div>
+        <div className="card stack">
+          <h1 style={{ fontSize: 26 }}>{no.quiz.modeTitle}</h1>
+          <button className="set-card" onClick={() => setMode("bingo")}>
+            <div className="spread">
+              <h3>{no.quiz.modeBingo}</h3>
+            </div>
+            <p className="preview" style={{ marginTop: 6 }}>{no.quiz.modeBingoLead}</p>
+          </button>
+          <button className="set-card" onClick={() => setMode("quiz")}>
+            <div className="spread">
+              <h3>{no.quiz.modeQuiz}</h3>
+            </div>
+            <p className="preview" style={{ marginTop: 6 }}>{no.quiz.modeQuizLead}</p>
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function BingoWizard() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("gathering");
   const [audience, setAudience] = useState<Audience | null>(null);

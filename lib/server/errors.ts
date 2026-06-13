@@ -18,6 +18,17 @@ const STATUS_BY_CODE: Record<string, number> = {
   not_your_mark: 403,
   set_not_found: 404,
   pool_too_small: 400,
+  // quiz mode
+  game_not_found: 404,
+  not_quiz: 409,
+  invalid_action: 400,
+  not_in_question: 409,
+  question_open: 409,
+  no_open_question: 409,
+  wrong_question: 409,
+  invalid_choice: 400,
+  invalid_player: 403,
+  already_answered: 409,
 };
 
 export function rpcErrorStatus(message: string): {
