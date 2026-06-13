@@ -120,7 +120,18 @@ export const api = {
       markId,
     }),
 
-  listSets: () => call<{ sets: StatementSetSummary[] }>("/api/statement-sets"),
+  listSets: () =>
+    call<{ sets: StatementSetSummary[]; aiAvailable: boolean }>(
+      "/api/statement-sets",
+    ),
 
   getSet: (id: string) => call<StatementSetDetail>(`/api/statement-sets/${id}`),
+
+  generateSet: (theme: string, audience: "kirke" | "skole" | "generell") =>
+    post<{
+      title: string;
+      audience: "kirke" | "skole" | "generell";
+      statements: string[];
+      rejectedCount: number;
+    }>("/api/statement-sets/generate", { theme, audience }),
 };

@@ -144,6 +144,25 @@ export const no = {
     setUse: "Bruk dette",
     setCustomize: "Kopier og tilpass",
     setCreate: "Lag eget",
+    setAi: "✨ Lag med AI",
+    aiTitle: "Lag utsagn med AI",
+    aiThemeLabel: "Tema",
+    aiThemePlaceholder: "F.eks. «konfirmantleir», «menighetsweekend»",
+    aiHint:
+      "AI foreslår utsagn ut fra tema og samling. Du får et utkast du kan endre før du tar det i bruk — ingenting lagres automatisk.",
+    aiGenerate: "Lag forslag",
+    aiGenerating: "Lager forslag …",
+    aiUnavailable:
+      "AI er ikke tilgjengelig akkurat nå. Du kan fortsatt velge et ferdig sett eller lage ditt eget.",
+    aiRejectedNote: (n: number) =>
+      n === 0
+        ? ""
+        : `${n} forslag ble filtrert bort for å holde det varmt og ufarlig.`,
+    aiReviewHint:
+      "Sjekk gjennom forslagene og endre det du vil — så bruker du settet.",
+    aiError: "Klarte ikke å lage forslag nå. Prøv igjen eller skriv tema på nytt.",
+    aiEmpty:
+      "Fant ingen trygge forslag for dette temaet. Prøv et annet tema eller lag settet selv.",
     editorTitle: "Eget utsagnssett",
     editorNameLabel: "Navn på settet",
     editorHint:
