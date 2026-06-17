@@ -21,4 +21,11 @@ export const events = {
   markResolved: "mark_resolved",
   /** A board hit the win condition → full-screen moment + toasts. */
   bingo: "bingo",
+
+  // ---------- quiz mode ----------
+  /** The host advanced the quiz (opened a question, revealed, or ended) →
+   * everyone refetches state and reroutes their UI. */
+  quizAdvance: "quiz_advance",
+  /** A player submitted an answer → board/host refetch the live count bar. */
+  quizAnswer: "quiz_answer",
 } as const;

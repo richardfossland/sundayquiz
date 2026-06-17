@@ -20,6 +20,7 @@ import {
   PlayerRow,
   StatementRow,
   StatementSetRow,
+  bingoConfig,
 } from "@/lib/types";
 
 type Db = ReturnType<typeof createServiceClient>;
@@ -277,8 +278,9 @@ export async function createBoards(
   playerIds: string[],
 ): Promise<void> {
   if (playerIds.length === 0) return;
+  const cfg = bingoConfig(game);
   const pool: PoolStatement[] = (
-    await listStatements(game.config.statementSetId)
+    await listStatements(cfg.statementSetId)
   ).map((s) => ({ id: s.id, text: s.text }));
 
   const rows = playerIds.map((playerId) => ({
@@ -286,8 +288,8 @@ export async function createBoards(
     player_id: playerId,
     cells: generateBoard(
       pool,
-      game.config.gridSize,
-      game.config.freeCentre,
+      cfg.gridSize,
+      cfg.freeCentre,
     ) satisfies BoardCell[],
   }));
   const { error } = await db()

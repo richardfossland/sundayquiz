@@ -33,7 +33,12 @@ async function main() {
   console.log(`Target project: ${REF} (shared with SundayChess)`);
 
   // 1. Apply migrations.
-  for (const file of ["0001_schema.sql", "0002_mark_rpcs.sql", "0003_seed_sets.sql"]) {
+  for (const file of [
+    "0001_schema.sql",
+    "0002_mark_rpcs.sql",
+    "0003_seed_sets.sql",
+    "0004_quiz_mode.sql",
+  ]) {
     const sql = readFileSync(new URL(`../supabase/migrations/${file}`, import.meta.url), "utf8");
     console.log(`Applying ${file} …`);
     await query(sql);

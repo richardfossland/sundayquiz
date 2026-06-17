@@ -8,10 +8,16 @@ import {
   BoardState,
   HostState,
   PlayerState,
+  QuestionSetDetail,
+  QuestionSetSummary,
+  QuizBoardState,
+  QuizHostState,
+  QuizPlayerState,
   StatementSetDetail,
   StatementSetSummary,
 } from "@/lib/dto";
 import { BingoConfig } from "@/lib/types";
+import { PointsMode } from "@/lib/quiz-types";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -134,4 +140,67 @@ export const api = {
       statements: string[];
       rejectedCount: number;
     }>("/api/statement-sets/generate", { theme, audience }),
+
+  // ---------- quiz mode ----------
+  createQuizGame: (payload: {
+    title: string;
+    quizConfig: { perQuestionSeconds: number; pointsMode: PointsMode };
+    questionSet:
+      | { id: string }
+      | {
+          title: string;
+          questions: {
+            prompt: string;
+            options: string[];
+            correctIndex: number;
+          }[];
+        };
+  }) =>
+    post<{ gameId: string; joinPin: string; hostCode: string }>("/api/games", {
+      gameType: "quiz",
+      ...payload,
+    }),
+
+  quizBoardState: (gameId: string) =>
+    call<QuizBoardState>(`/api/games/${gameId}/state?role=board`),
+
+  quizPlayerState: (gameId: string, playerId: string, code: string) =>
+    post<QuizPlayerState>(`/api/games/${gameId}/state`, {
+      role: "player",
+      playerId,
+      code,
+    }),
+
+  quizHostState: (gameId: string, code: string) =>
+    post<QuizHostState>(`/api/games/${gameId}/state`, { role: "host", code }),
+
+  quizAdvance: (
+    gameId: string,
+    hostCode: string,
+    action: "next" | "reveal" | "end",
+  ) =>
+    post<{ phase: string; questionNumber: number; totalQuestions: number }>(
+      `/api/games/${gameId}/quiz/advance`,
+      { hostCode, action },
+    ),
+
+  quizAnswer: (args: {
+    gameId: string;
+    playerId: string;
+    code: string;
+    questionId: string;
+    choice: number;
+  }) =>
+    post<{ ok: true; choice: number }>(`/api/games/${args.gameId}/quiz/answer`, {
+      playerId: args.playerId,
+      code: args.code,
+      questionId: args.questionId,
+      choice: args.choice,
+    }),
+
+  listQuestionSets: () =>
+    call<{ sets: QuestionSetSummary[] }>("/api/question-sets"),
+
+  getQuestionSet: (id: string) =>
+    call<QuestionSetDetail>(`/api/question-sets/${id}`),
 };
