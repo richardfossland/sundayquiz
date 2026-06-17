@@ -6,6 +6,11 @@ import {
   buildPlayerState,
 } from "@/lib/server/state";
 import {
+  buildQuizBoardState,
+  buildQuizHostState,
+  buildQuizPlayerState,
+} from "@/lib/server/quiz-state";
+import {
   createBoards,
   expireStaleMarks,
   getBoardForPlayer,
@@ -40,6 +45,9 @@ export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
   const game = await requireGame(id);
   if (!game) return fail(404, "not_found");
+  if (game.game_type === "quiz") {
+    return ok(await buildQuizBoardState(game));
+  }
   await expireAndNotify(game);
   return ok(await buildBoardState(game));
 }
@@ -56,15 +64,21 @@ export async function POST(req: Request, { params }: Params) {
     code?: string;
   }>(req);
 
-  await expireAndNotify(game);
+  const isQuiz = game.game_type === "quiz";
+  if (!isQuiz) await expireAndNotify(game);
 
   if (body?.role === "host") {
     if (!requireHost(game, body.code)) return fail(403, "forbidden");
-    return ok(await buildHostState(game));
+    return ok(isQuiz ? await buildQuizHostState(game) : await buildHostState(game));
   }
 
   const player = await requirePlayer(game, body?.playerId, body?.code);
   if (!player) return fail(403, "forbidden");
+
+  if (isQuiz) {
+    // Quiz has no per-player board to generate — the question stream is shared.
+    return ok(await buildQuizPlayerState(game, player));
+  }
 
   // Self-heal: a player who joined in the lobby but slipped through the
   // start-transition race (joined as 'lobby' just as the host flipped to

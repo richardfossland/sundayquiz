@@ -28,7 +28,9 @@ export async function POST(req: Request) {
 
   try {
     const player = await addPlayer(game.id, displayName);
-    if (game.status === "live") {
+    // Bingo gives a late joiner a board inline; quiz has no per-player board
+    // (the question stream is shared), so nothing to generate.
+    if (game.status === "live" && game.game_type === "bingo") {
       await createBoards(game, [player.id]);
     }
     await broadcast(channels.game(game.id), events.roster, {

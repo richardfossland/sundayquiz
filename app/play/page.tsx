@@ -8,6 +8,7 @@ import { identity, StoredPlayer } from "@/lib/client/identity";
 import { isValidPin } from "@/lib/codes";
 import { no } from "@/lib/locale/no";
 import { PlayerGame } from "./PlayerGame";
+import { QuizPlayerGame } from "./QuizPlayerGame";
 
 type Screen =
   | { kind: "init" }
@@ -105,7 +106,7 @@ function JoinFlow() {
 
   if (screen.kind === "playing") {
     return (
-      <PlayerGame
+      <PlayingRouter
         player={screen.player}
         onSessionLost={() => {
           identity.clearPlayer();
@@ -166,6 +167,48 @@ function JoinFlow() {
         )}
       </div>
     </main>
+  );
+}
+
+// Routes a playing session to the right in-mode UI. The board state is public
+// and carries the game_type (quiz state includes `gameType: "quiz"`), so one
+// lightweight fetch decides which client renders.
+function PlayingRouter({
+  player,
+  onSessionLost,
+}: {
+  player: StoredPlayer;
+  onSessionLost: () => void;
+}) {
+  const [gameType, setGameType] = useState<"bingo" | "quiz" | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api
+      .boardState(player.gameId)
+      .then((s) => {
+        if (alive) {
+          setGameType(
+            (s as { gameType?: string }).gameType === "quiz" ? "quiz" : "bingo",
+          );
+        }
+      })
+      .catch(() => alive && setGameType("bingo"));
+    return () => {
+      alive = false;
+    };
+  }, [player.gameId]);
+
+  if (gameType === null) {
+    return (
+      <main className="center-screen">
+        <p className="muted">{no.common.loading}</p>
+      </main>
+    );
+  }
+  return gameType === "quiz" ? (
+    <QuizPlayerGame player={player} onSessionLost={onSessionLost} />
+  ) : (
+    <PlayerGame player={player} onSessionLost={onSessionLost} />
   );
 }
 

@@ -6,6 +6,7 @@
 
 const BASE = process.env.BASE || "http://localhost:3000";
 const BUILTIN_SET = "a1000000-0000-4000-8000-000000000001";
+const BUILTIN_QUIZ_SET = "b2000000-0000-4000-8000-000000000001";
 
 let failures = 0;
 function check(name, cond, extra = "") {
@@ -212,8 +213,92 @@ async function main() {
   const lateJoin = await post("/api/join", { pin: joinPin, displayName: "Frida" });
   check("join after finish rejected", lateJoin.status === 404 || lateJoin.status === 409, JSON.stringify(lateJoin.json));
 
+  await quizSmoke();
+
   console.log(failures === 0 ? "\nSMOKE GREEN" : `\nSMOKE RED: ${failures} failures`);
   process.exit(failures === 0 ? 0 : 1);
+}
+
+// ---------- quiz mode: create → join → advance → answer → reveal → leaderboard
+async function quizSmoke() {
+  console.log("\n-- quiz mode --");
+  const created = await post("/api/games", {
+    gameType: "quiz",
+    title: "Quiz-røyktest",
+    quizConfig: { perQuestionSeconds: 20, pointsMode: "speed" },
+    questionSet: { id: BUILTIN_QUIZ_SET },
+  });
+  check("create quiz game", created.status === 200 && created.json?.gameId, JSON.stringify(created.json));
+  const { gameId, joinPin, hostCode } = created.json;
+
+  const players = {};
+  for (const name of ["Eva", "Frode", "Gina"]) {
+    const j = await post("/api/join", { pin: joinPin, displayName: name });
+    check(`quiz join ${name}`, j.status === 200 && j.json?.playerId);
+    players[name] = j.json;
+  }
+
+  let board = await get(`/api/games/${gameId}/state?role=board`);
+  check("quiz board lobby (idle)", board.json?.gameType === "quiz" && board.json?.phase === "idle", JSON.stringify(board.json)?.slice(0, 160));
+
+  // Host opens the first question → game flips live.
+  const adv = await post(`/api/games/${gameId}/quiz/advance`, { hostCode, action: "next" });
+  check("advance to first question", adv.status === 200 && adv.json?.phase === "question" && adv.json?.questionNumber === 1, JSON.stringify(adv.json));
+
+  // Player fetches the open question.
+  const pstate = (name) =>
+    post(`/api/games/${gameId}/state`, {
+      role: "player",
+      playerId: players[name].playerId,
+      code: players[name].resumeCode,
+    });
+  const eva = await pstate("Eva");
+  check("quiz player sees question + 4 options", eva.json?.question?.options?.length === 4, JSON.stringify(eva.json?.question));
+  check("correct index hidden during question", eva.json?.question?.correctIndex === null);
+  const qid = eva.json.question.questionId;
+
+  const answer = (name, choice) =>
+    post(`/api/games/${gameId}/quiz/answer`, {
+      playerId: players[name].playerId,
+      code: players[name].resumeCode,
+      questionId: qid,
+      choice,
+    });
+
+  // Find the correct choice via the host state at reveal later; for now Eva
+  // answers choice 0, Frode choice 1 (one of them is right — scoring is
+  // server-authoritative either way).
+  const a1 = await answer("Eva", 0);
+  check("Eva answers", a1.status === 200, JSON.stringify(a1.json));
+  const dup = await answer("Eva", 1);
+  check("double answer rejected", dup.status === 409 && dup.json?.error === "already_answered", JSON.stringify(dup.json));
+  await answer("Frode", 1);
+
+  // Board shows a live answer count.
+  board = await get(`/api/games/${gameId}/state?role=board`);
+  check("board shows 2 answers", board.json?.question?.totalAnswers === 2, JSON.stringify(board.json?.question));
+  check("board hides correct index during question", board.json?.question?.correctIndex === null);
+
+  // Reveal closes answering and exposes the correct index.
+  const rev = await post(`/api/games/${gameId}/quiz/advance`, { hostCode, action: "reveal" });
+  check("reveal", rev.status === 200 && rev.json?.phase === "reveal");
+  board = await get(`/api/games/${gameId}/state?role=board`);
+  check("reveal exposes correct index", board.json?.question?.correctIndex !== null, JSON.stringify(board.json?.question));
+  check("leaderboard present (3 players)", board.json?.leaderboard?.length === 3, JSON.stringify(board.json?.leaderboard));
+
+  // Cannot answer during reveal.
+  const late = await answer("Gina", 0);
+  check("answer during reveal rejected", late.status === 409 && late.json?.error === "no_open_question", JSON.stringify(late.json));
+
+  // End the quiz.
+  const ended = await post(`/api/games/${gameId}/quiz/advance`, { hostCode, action: "end" });
+  check("end quiz", ended.status === 200 && ended.json?.phase === "ended");
+  board = await get(`/api/games/${gameId}/state?role=board`);
+  check("quiz finished", board.json?.status === "finished" && board.json?.phase === "ended");
+
+  // Joining a finished quiz is rejected.
+  const lateJoin = await post("/api/join", { pin: joinPin, displayName: "Hanne" });
+  check("join after quiz finish rejected", lateJoin.status === 404 || lateJoin.status === 409, JSON.stringify(lateJoin.json));
 }
 
 main().catch((e) => {
