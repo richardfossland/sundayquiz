@@ -66,6 +66,12 @@ function BingoWizard() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorText, setEditorText] = useState("");
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTheme, setAiTheme] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiRejected, setAiRejected] = useState(0);
   const [gridSize, setGridSize] = useState<GridSize>(DEFAULT_CONFIG.gridSize);
   const [winCondition, setWinCondition] = useState<WinCondition>(
     DEFAULT_CONFIG.winCondition,
@@ -79,7 +85,10 @@ function BingoWizard() {
   useEffect(() => {
     api
       .listSets()
-      .then((r) => setSets(r.sets))
+      .then((r) => {
+        setSets(r.sets);
+        setAiAvailable(r.aiAvailable);
+      })
       .catch(() => setSets([]));
   }, []);
 
@@ -133,6 +142,35 @@ function BingoWizard() {
       setSelectedSetId(null);
       setCustom(null);
     } catch {}
+  };
+
+  // AI draft → land it in the editor so the host reviews/edits before using it.
+  // Never auto-commits: the host still presses "Bruk dette", then "Opprett".
+  const generateWithAi = async () => {
+    setAiBusy(true);
+    setAiError(null);
+    setAiRejected(0);
+    try {
+      const res = await api.generateSet(aiTheme.trim(), audience ?? "generell");
+      setEditorTitle(res.title);
+      setEditorText(res.statements.join("\n"));
+      setAiRejected(res.rejectedCount);
+      setAiOpen(false);
+      setEditorOpen(true);
+      setSelectedSetId(null);
+      setCustom(null);
+    } catch (err) {
+      const code = (err as Error).message;
+      setAiError(
+        code === "ai_empty"
+          ? t.aiEmpty
+          : code === "ai_unavailable"
+            ? t.aiUnavailable
+            : t.aiError,
+      );
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   const create = async () => {
@@ -253,20 +291,83 @@ function BingoWizard() {
                       )}
                     </div>
                   ))}
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      setEditorOpen(true);
-                      setSelectedSetId(null);
-                    }}
-                  >
-                    ＋ {t.setCreate}
-                  </button>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => {
+                        setEditorOpen(true);
+                        setSelectedSetId(null);
+                        setAiRejected(0);
+                      }}
+                    >
+                      ＋ {t.setCreate}
+                    </button>
+                    {aiAvailable && (
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          setAiOpen(true);
+                          setAiError(null);
+                          setSelectedSetId(null);
+                          setCustom(null);
+                        }}
+                      >
+                        {t.setAi}
+                      </button>
+                    )}
+                  </div>
+                  {!aiAvailable && (
+                    <p className="faint" style={{ fontSize: 13 }}>
+                      {t.aiUnavailable}
+                    </p>
+                  )}
+                </div>
+              )}
+              {aiOpen && !editorOpen && (
+                <div className="stack">
+                  <h2 style={{ fontSize: 20 }}>{t.aiTitle}</h2>
+                  <p className="faint" style={{ fontSize: 13 }}>
+                    {t.aiHint}
+                  </p>
+                  <div className="field">
+                    <label htmlFor="aitheme">{t.aiThemeLabel}</label>
+                    <input
+                      id="aitheme"
+                      className="input"
+                      maxLength={120}
+                      placeholder={t.aiThemePlaceholder}
+                      value={aiTheme}
+                      onChange={(e) => setAiTheme(e.target.value)}
+                    />
+                  </div>
+                  {aiError && (
+                    <div className="banner banner-error">{aiError}</div>
+                  )}
+                  <div className="row">
+                    <button
+                      className="btn btn-primary"
+                      disabled={aiBusy || aiTheme.trim().length < 2}
+                      onClick={generateWithAi}
+                    >
+                      {aiBusy ? t.aiGenerating : t.aiGenerate}
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => setAiOpen(false)}
+                    >
+                      {no.common.cancel}
+                    </button>
+                  </div>
                 </div>
               )}
               {editorOpen && (
                 <div className="stack">
                   <h2 style={{ fontSize: 20 }}>{t.editorTitle}</h2>
+                  {aiRejected > 0 && (
+                    <div className="banner banner-info">
+                      ✨ {t.aiReviewHint} {t.aiRejectedNote(aiRejected)}
+                    </div>
+                  )}
                   <div className="field">
                     <label htmlFor="settitle">{t.editorNameLabel}</label>
                     <input
