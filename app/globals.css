@@ -989,7 +989,7 @@ textarea.input {
 }
 
 /* ---------------- quiz mode ---------------- */
-/* Big-screen question tiles (4 Kahoot-style colours, live answer-count bar). */
+/* Big-screen question tiles (4 bright answer-tile colours, live answer-count bar). */
 .quiz-tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;
