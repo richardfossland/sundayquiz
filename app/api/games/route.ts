@@ -6,6 +6,21 @@ import { listStatements } from "@/lib/server/store";
 import { BingoConfig, DEFAULT_CONFIG, GridSize, WinCondition } from "@/lib/types";
 import { createQuizGame, listQuestions } from "@/lib/server/quiz-store";
 import { DEFAULT_QUIZ_CONFIG, PointsMode } from "@/lib/quiz-types";
+import { getHostUser } from "@/lib/server/auth-host";
+import { stampGameOwner } from "@/lib/server/host-games";
+
+// If a Sunday host is signed in, tie the freshly created game to their account
+// so it shows up in their dashboard. Anonymous (logged-out) create stays
+// fully working — owner is simply left null. Best-effort: never let stamping
+// break the create response.
+async function stampOwnerIfSignedIn(gameId: string): Promise<void> {
+  try {
+    const user = await getHostUser();
+    if (user) await stampGameOwner(gameId, user.id);
+  } catch (err) {
+    console.error("[games:create:stampOwner]", err);
+  }
+}
 
 interface CreatePayload {
   gameType?: "bingo" | "quiz";
@@ -92,6 +107,7 @@ export async function POST(req: Request) {
       config,
       statementSet,
     });
+    await stampOwnerIfSignedIn(game.id);
     return ok({ gameId: game.id, joinPin, hostCode });
   } catch (err) {
     const { status, code } = rpcErrorStatus((err as Error).message);
@@ -167,6 +183,7 @@ async function createQuiz(body: CreatePayload): Promise<Response> {
       config: { perQuestionSeconds, pointsMode },
       questionSet,
     });
+    await stampOwnerIfSignedIn(game.id);
     return ok({ gameId: game.id, joinPin, hostCode });
   } catch (err) {
     const { status, code } = rpcErrorStatus((err as Error).message);

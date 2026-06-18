@@ -203,4 +203,9 @@ export const api = {
 
   getQuestionSet: (id: string) =>
     call<QuestionSetDetail>(`/api/question-sets/${id}`),
+
+  // Sunday Account host dashboard: delete one of the signed-in host's games.
+  // Auth rides on the Sunday session cookie (no body) — owner-gated server-side.
+  deleteGame: (gameId: string) =>
+    call<{ ok: true }>(`/api/games/${gameId}`, { method: "DELETE" }),
 };

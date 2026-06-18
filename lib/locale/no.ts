@@ -251,6 +251,46 @@ export const no = {
     },
   },
 
+  // Sunday Account host login + "mine spill" dashboard. The signed-in host is
+  // the VERT; players/joiners stay fully code-based (no account needed).
+  hostAuth: {
+    loginTitle: "Logg inn som vert",
+    loginLead:
+      "Logg inn med Sunday-kontoen din for å se og styre spillene dine. Deltakere trenger ingen konto — de blir med med PIN.",
+    emailLabel: "E-post",
+    emailPlaceholder: "deg@menigheten.no",
+    sendMagicLink: "Send innloggingslenke",
+    sending: "Sender …",
+    magicLinkSent: (email: string) =>
+      `Sjekk innboksen til ${email} — vi har sendt deg en innloggingslenke.`,
+    google: "Logg inn med Sunday-konto",
+    or: "eller",
+    sendError: "Klarte ikke å sende lenken — sjekk adressen og prøv igjen.",
+    authError: "Innloggingen feilet. Prøv igjen.",
+    backToPlay: "Tilbake til forsiden",
+    // dashboard
+    dashTitle: "Spillene mine",
+    dashLead: "Spill du har laget mens du var innlogget.",
+    signedInAs: (email: string) => `Innlogget som ${email}`,
+    signOut: "Logg ut",
+    createNew: "Lag nytt spill",
+    empty: "Du har ingen lagrede spill ennå. Lag ett for å komme i gang.",
+    open: "Åpne",
+    delete: "Slett",
+    deleting: "Sletter …",
+    confirmDelete: (title: string) =>
+      `Slette «${title || "uten tittel"}»? Dette kan ikke angres — alle deltakere, brett og svar slettes.`,
+    deleteError: "Klarte ikke å slette spillet. Prøv igjen.",
+    statusLobby: "Lobby",
+    statusLive: "Direkte",
+    statusFinished: "Avsluttet",
+    typeBingo: "Bingo",
+    typeQuiz: "Quiz",
+    pinLabel: "PIN",
+    created: "Opprettet",
+    notHost: "Denne kontoen har ikke vert-tilgang.",
+  },
+
   common: {
     loading: "Laster …",
     error: "Noe gikk galt",
