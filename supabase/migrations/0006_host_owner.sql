@@ -1,4 +1,4 @@
--- SundayQuiz — Sunday Account host ownership.
+-- SundayQuiz — 0006 — Sunday Account host ownership.
 --
 -- The host SSO dashboard ("Spillene mine") needs to tie a game to the Sunday
 -- account that created it. The owner column is `quiz.games.host_user_id`
