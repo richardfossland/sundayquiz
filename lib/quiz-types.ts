@@ -1,5 +1,5 @@
 // Quiz-mode domain types. The platform shell (games/players/lifecycle) is
-// generic (spec §2); these types are NET-NEW in-mode state for the Kahoot-style
+// generic (spec §2); these types are NET-NEW in-mode state for the live-quiz
 // live Q&A game_type, and share NOTHING with bingo's in-game logic.
 
 export type PointsMode = "speed" | "flat";
@@ -17,7 +17,7 @@ export const DEFAULT_QUIZ_CONFIG: Omit<QuizConfig, "questionSetId"> = {
   pointsMode: "speed",
 };
 
-/** Max points a single question can award (Kahoot-style ceiling). */
+/** Max points a single question can award (per-question ceiling). */
 export const MAX_QUESTION_POINTS = 1000;
 /** Floor for a correct speed answer right at the buzzer (never below this). */
 export const MIN_SPEED_POINTS = 100;

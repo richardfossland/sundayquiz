@@ -1,6 +1,6 @@
 # SundayQuiz — Build Plan & Technical Specification
 
-**Target:** A live, social game platform for classrooms and church gatherings. First shipped game mode: **Bli-kjent-bingo** (human bingo / icebreaker bingo) — peer-verified, phone-based, with a big-screen board. Architecture is built as a *platform* so that quiz (Kahoot-style Q&A) and announcer-bingo can be added as modes later without restructuring.
+**Target:** A live, social game platform for classrooms and church gatherings. First shipped game mode: **Bli-kjent-bingo** (human bingo / icebreaker bingo) — peer-verified, phone-based, with a big-screen board. Architecture is built as a *platform* so that quiz (live Q&A) and announcer-bingo can be added as modes later without restructuring.
 
 **Deployment target:** `quiz.sundaysuite.app`.
 
