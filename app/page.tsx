@@ -8,7 +8,7 @@ export default function Landing() {
       <div className="stack" style={{ width: "100%", maxWidth: 760 }}>
         <div className="text-center stack" style={{ gap: 10 }}>
           <span className="brandmark" style={{ justifyContent: "center" }}>
-            <span className="glyph">▦</span>
+            <span className="glyph" aria-hidden="true">▦</span>
             Sunday<b>Quiz</b>
           </span>
           <h1 style={{ fontSize: "clamp(34px, 6vw, 56px)" }}>{t.heroTitle}</h1>
@@ -17,9 +17,9 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="row" style={{ alignItems: "stretch", flexWrap: "wrap" }}>
+        <div className="row entrance-row" style={{ alignItems: "stretch", flexWrap: "wrap" }}>
           <Link href="/play" className="card entrance grow">
-            <div className="entrance-glyph">📱</div>
+            <div className="entrance-glyph" aria-hidden="true">📱</div>
             <h2 style={{ fontSize: 24, marginBottom: 6 }}>{t.joinTitle}</h2>
             <p className="muted" style={{ fontSize: 15 }}>{t.joinLead}</p>
             <p style={{ marginTop: 14 }}>
@@ -27,7 +27,7 @@ export default function Landing() {
             </p>
           </Link>
           <Link href="/ny" className="card entrance grow">
-            <div className="entrance-glyph">🎛️</div>
+            <div className="entrance-glyph" aria-hidden="true">🎛️</div>
             <h2 style={{ fontSize: 24, marginBottom: 6 }}>{t.hostTitle}</h2>
             <p className="muted" style={{ fontSize: 15 }}>{t.hostLead}</p>
             <p style={{ marginTop: 14 }}>
