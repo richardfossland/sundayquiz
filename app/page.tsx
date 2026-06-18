@@ -46,6 +46,12 @@ export default function Landing() {
         </div>
 
         <p className="text-center faint" style={{ fontSize: 14 }}>
+          <Link href="/host" style={{ color: "var(--gold)" }}>
+            {no.hostAuth.dashTitle}
+          </Link>
+        </p>
+
+        <p className="text-center faint" style={{ fontSize: 14 }}>
           {t.resumeLead}{" "}
           <Link href="/play?resume=1" style={{ color: "var(--gold)" }}>
             {t.resumeCta}

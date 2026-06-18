@@ -47,13 +47,14 @@ create extension if not exists pgcrypto;
 SQL
 
 echo "Applying migrations …"
-for f in 0001_schema.sql 0002_mark_rpcs.sql 0003_seed_sets.sql 0004_quiz_mode.sql; do
+for f in 0001_schema.sql 0002_mark_rpcs.sql 0003_seed_sets.sql 0004_quiz_mode.sql 0005_host_owner.sql; do
   echo "  - $f"
   PSQL < "$MIG/$f" >/dev/null
 done
 
-echo "Re-applying 0004 (idempotency check) …"
+echo "Re-applying 0004 + 0005 (idempotency check) …"
 PSQL < "$MIG/0004_quiz_mode.sql" >/dev/null
+PSQL < "$MIG/0005_host_owner.sql" >/dev/null
 
 echo "Running assertions …"
 PSQL <<'SQL'
