@@ -2,7 +2,7 @@
 
 Live social game platform at quiz.sundaysuite.app. Two game_types share a
 generic shell (PIN join, resume codes, presence roster, lobby→live→finished):
-**bli-kjent-bingo** and the namesake **quiz** (Kahoot-style live Q&A).
+**bli-kjent-bingo** and the namesake **quiz** (live Q&A on the big screen).
 Spec: docs/SPEC.md. Gate: `npm run check` (tsc + eslint + vitest); DB changes:
 `./scripts/test-db.sh` (ephemeral Postgres in Docker).
 Supabase: shared project, dedicated `quiz` schema — all writes via API routes

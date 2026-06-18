@@ -11,7 +11,7 @@ import { Confetti } from "@/app/components/Confetti";
 
 const t = no.quiz;
 
-// The four Kahoot-style answer colours/shapes, by option index.
+// The four answer-tile colours/shapes, by option index.
 const TILE = [
   { bg: "#d9434e", glyph: "▲" },
   { bg: "#2b7cd3", glyph: "◆" },
