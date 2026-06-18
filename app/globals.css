@@ -5,10 +5,11 @@
    for celebration moments. Fonts injected by next/font in layout.tsx. */
 
 :root {
+  /* Sunday Suite canonical gold (light #F2D58A · gold #EBB84B · deep #D4A23A). */
   --gold: #ebb84b;
-  --gold-light: #f6dd97;
-  --gold-deep: #c9982f;
-  --gold-grad: linear-gradient(135deg, #f6dd97 0%, #ebb84b 45%, #d4a23a 100%);
+  --gold-light: #f2d58a;
+  --gold-deep: #d4a23a;
+  --gold-grad: linear-gradient(135deg, #f2d58a 0%, #ebb84b 45%, #d4a23a 100%);
 
   --ink: #11141b;
   --ink-2: #181c25;
@@ -116,7 +117,29 @@ button {
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* ============ focus ring (keyboard a11y, WCAG 2.4.7) ============ */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 6px;
+}
+.btn:focus-visible,
+.opt:focus-visible,
+.set-card:focus-visible,
+.entrance:focus-visible,
+.bingo-cell:focus-visible,
+.picker-row:focus-visible,
+.quiz-answer:focus-visible {
+  border-radius: inherit;
+}
+/* inputs already carry their own focus treatment — keep the ring consistent */
+.input:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(235, 184, 75, 0.18);
 }
 
 /* ============ layout primitives ============ */
@@ -229,6 +252,7 @@ button {
   font-size: 15px;
   font-weight: 600;
   padding: 12px 22px;
+  min-height: 44px; /* comfortable touch target (WCAG 2.5.5) */
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.15s var(--ease), background 0.2s, border-color 0.2s, opacity 0.2s;
@@ -271,6 +295,15 @@ button {
 }
 .btn-block {
   width: 100%;
+}
+/* compact inline action (kick / force-expire) — keeps a 44px hit area */
+.btn-mini {
+  font-size: 13px;
+  padding: 6px 14px;
+  min-height: 36px;
+}
+@media (pointer: coarse) {
+  .btn-mini { min-height: 44px; }
 }
 
 /* ============ forms ============ */
@@ -683,6 +716,19 @@ textarea.input {
   border-color: rgba(235, 184, 75, 0.55);
   color: var(--gold-light);
 }
+.toast.error {
+  border-color: rgba(210, 85, 77, 0.55);
+  color: #f0a09a;
+}
+.toast .toast-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-right: 8px;
+  vertical-align: middle;
+}
 
 /* ============ board screen ============ */
 .board-screen {
@@ -840,6 +886,19 @@ textarea.input {
   border-color: transparent;
 }
 
+/* host panel shell + repeated code display */
+.host-shell {
+  padding: 20px 16px 80px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.code-strong {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
 /* table (host) */
 .table {
   width: 100%;
@@ -893,6 +952,12 @@ textarea.input {
 }
 
 /* landing entrances */
+.entrance-row > .entrance {
+  /* keep both cards on one line on wide screens, but let them wrap to
+     full-width before their content forces a horizontal overflow on phones */
+  flex: 1 1 260px;
+  min-width: 0;
+}
 .entrance {
   display: block;
   text-align: left;
@@ -999,3 +1064,30 @@ textarea.input {
 }
 .quiz-answer:active:not(:disabled) { transform: scale(0.97); }
 .quiz-answer:disabled { cursor: default; }
+
+/* ============ narrow phones (≤430px) ============ */
+/* Host/board headers and PIN rows pack a lot onto one line; let them wrap and
+   relax horizontal padding so nothing clips at ~390px (iPhone 12/13/14). */
+@media (max-width: 430px) {
+  .host-shell {
+    padding: 16px 12px 72px;
+  }
+  .board-screen {
+    padding: 20px 16px;
+    gap: 18px;
+  }
+  /* allow the brandmark + status / title + PIN rows to wrap gracefully */
+  .spread {
+    flex-wrap: wrap;
+  }
+  .pin-hero {
+    letter-spacing: 0.08em;
+  }
+  .podium-col {
+    flex-basis: 96px;
+  }
+  /* the small inline actions stay tappable but never push titles off-screen */
+  .btn-mini {
+    padding: 6px 12px;
+  }
+}

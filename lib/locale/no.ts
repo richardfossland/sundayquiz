@@ -197,7 +197,7 @@ export const no = {
     modeBingo: "Bli-kjent-bingo",
     modeBingoLead: "Finn folk i rommet som passer utsagnene. Sosialt.",
     modeQuiz: "Quiz",
-    modeQuizLead: "Kahoot-stil: spørsmål på storskjermen, svar på mobilen.",
+    modeQuizLead: "Spørsmål på storskjermen, svar på mobilen.",
     stepQuestionSet: "Velg spørsmålssett",
     questionCount: (n: number) => (n === 1 ? "1 spørsmål" : `${n} spørsmål`),
     perQuestionLabel: "Sekunder per spørsmål",

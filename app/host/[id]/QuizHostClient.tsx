@@ -8,6 +8,7 @@ import { useGameState } from "@/lib/client/useGameState";
 import { QuizHostState } from "@/lib/dto";
 import { normalizeResumeCode } from "@/lib/codes";
 import { no } from "@/lib/locale/no";
+import { Toast } from "@/app/components/Toast";
 
 const t = no.quiz;
 
@@ -17,6 +18,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [checkedStorage, setCheckedStorage] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -49,7 +51,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
     try {
       await api.quizAdvance(gameId, hostCode, action);
     } catch (err) {
-      window.alert((err as Error).message);
+      setToast((err as Error).message || no.common.error);
     } finally {
       setBusy(false);
       void refetch();
@@ -117,7 +119,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
   const isLast = state.questionNumber >= state.totalQuestions;
 
   return (
-    <main style={{ padding: "20px 16px 80px", maxWidth: 680, margin: "0 auto" }}>
+    <main className="host-shell">
       <header className="spread" style={{ marginBottom: 18 }}>
         <span className="brandmark" style={{ fontSize: 18 }}>
           <span className="glyph">▦</span>Sunday<b>Quiz</b>
@@ -135,7 +137,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
         <div className="card stack">
           <div className="spread">
             <h1 style={{ fontSize: 24 }}>{no.host.title}</h1>
-            <span className="mono" style={{ color: "var(--gold)", fontSize: 22, fontWeight: 700 }}>
+            <span className="code-strong" aria-label={`PIN ${state.joinPin}`}>
               {state.joinPin}
             </span>
           </div>
@@ -199,8 +201,8 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
                 </span>
                 {state.status !== "finished" && (
                   <button
-                    className="btn btn-ghost"
-                    style={{ padding: "6px 14px", fontSize: 13 }}
+                    className="btn btn-ghost btn-mini"
+                    aria-label={`${no.host.kick} ${p.name}`}
                     onClick={async () => {
                       if (!window.confirm(no.host.kickConfirm(p.name))) return;
                       await api.kickPlayer(gameId, hostCode, p.id);
@@ -218,12 +220,11 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
 
         <div className="card stack" style={{ gap: 8 }}>
           <p className="eyebrow">{no.host.hostCodeTitle}</p>
-          <p className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--gold)" }}>
-            {hostCode}
-          </p>
+          <p className="code-strong">{hostCode}</p>
           <p className="faint" style={{ fontSize: 13.5 }}>{no.host.hostCodeLead}</p>
         </div>
       </div>
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </main>
   );
 }
