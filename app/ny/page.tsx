@@ -8,6 +8,7 @@ import { identity } from "@/lib/client/identity";
 import { StatementSetSummary } from "@/lib/dto";
 import { Audience, DEFAULT_CONFIG, GridSize, WinCondition } from "@/lib/types";
 import { no } from "@/lib/locale/no";
+import { QuizWizard } from "./QuizWizard";
 
 const t = no.wizard;
 
@@ -19,7 +20,42 @@ interface CustomSet {
   statements: string[];
 }
 
+// Entry point: pick a game mode (the platform now ships two — bingo and the
+// namesake quiz), then run the mode's wizard.
 export default function NewGameWizard() {
+  const [mode, setMode] = useState<"bingo" | "quiz" | null>(null);
+  if (mode === "quiz") return <QuizWizard onBack={() => setMode(null)} />;
+  if (mode === "bingo") return <BingoWizard />;
+  return (
+    <main className="center-screen" style={{ alignItems: "flex-start", paddingTop: 40 }}>
+      <div className="stack" style={{ width: "100%", maxWidth: 620 }}>
+        <div className="spread">
+          <Link href="/" className="brandmark">
+            <span className="glyph">▦</span>Sunday<b>Quiz</b>
+          </Link>
+          <span className="muted" style={{ fontSize: 14 }}>{t.title}</span>
+        </div>
+        <div className="card stack">
+          <h1 style={{ fontSize: 26 }}>{no.quiz.modeTitle}</h1>
+          <button className="set-card" onClick={() => setMode("bingo")}>
+            <div className="spread">
+              <h3>{no.quiz.modeBingo}</h3>
+            </div>
+            <p className="preview" style={{ marginTop: 6 }}>{no.quiz.modeBingoLead}</p>
+          </button>
+          <button className="set-card" onClick={() => setMode("quiz")}>
+            <div className="spread">
+              <h3>{no.quiz.modeQuiz}</h3>
+            </div>
+            <p className="preview" style={{ marginTop: 6 }}>{no.quiz.modeQuizLead}</p>
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function BingoWizard() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("gathering");
   const [audience, setAudience] = useState<Audience | null>(null);
@@ -30,6 +66,12 @@ export default function NewGameWizard() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorText, setEditorText] = useState("");
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTheme, setAiTheme] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiRejected, setAiRejected] = useState(0);
   const [gridSize, setGridSize] = useState<GridSize>(DEFAULT_CONFIG.gridSize);
   const [winCondition, setWinCondition] = useState<WinCondition>(
     DEFAULT_CONFIG.winCondition,
@@ -43,7 +85,10 @@ export default function NewGameWizard() {
   useEffect(() => {
     api
       .listSets()
-      .then((r) => setSets(r.sets))
+      .then((r) => {
+        setSets(r.sets);
+        setAiAvailable(r.aiAvailable);
+      })
       .catch(() => setSets([]));
   }, []);
 
@@ -97,6 +142,35 @@ export default function NewGameWizard() {
       setSelectedSetId(null);
       setCustom(null);
     } catch {}
+  };
+
+  // AI draft → land it in the editor so the host reviews/edits before using it.
+  // Never auto-commits: the host still presses "Bruk dette", then "Opprett".
+  const generateWithAi = async () => {
+    setAiBusy(true);
+    setAiError(null);
+    setAiRejected(0);
+    try {
+      const res = await api.generateSet(aiTheme.trim(), audience ?? "generell");
+      setEditorTitle(res.title);
+      setEditorText(res.statements.join("\n"));
+      setAiRejected(res.rejectedCount);
+      setAiOpen(false);
+      setEditorOpen(true);
+      setSelectedSetId(null);
+      setCustom(null);
+    } catch (err) {
+      const code = (err as Error).message;
+      setAiError(
+        code === "ai_empty"
+          ? t.aiEmpty
+          : code === "ai_unavailable"
+            ? t.aiUnavailable
+            : t.aiError,
+      );
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   const create = async () => {
@@ -217,20 +291,83 @@ export default function NewGameWizard() {
                       )}
                     </div>
                   ))}
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      setEditorOpen(true);
-                      setSelectedSetId(null);
-                    }}
-                  >
-                    ＋ {t.setCreate}
-                  </button>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => {
+                        setEditorOpen(true);
+                        setSelectedSetId(null);
+                        setAiRejected(0);
+                      }}
+                    >
+                      ＋ {t.setCreate}
+                    </button>
+                    {aiAvailable && (
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          setAiOpen(true);
+                          setAiError(null);
+                          setSelectedSetId(null);
+                          setCustom(null);
+                        }}
+                      >
+                        {t.setAi}
+                      </button>
+                    )}
+                  </div>
+                  {!aiAvailable && (
+                    <p className="faint" style={{ fontSize: 13 }}>
+                      {t.aiUnavailable}
+                    </p>
+                  )}
+                </div>
+              )}
+              {aiOpen && !editorOpen && (
+                <div className="stack">
+                  <h2 style={{ fontSize: 20 }}>{t.aiTitle}</h2>
+                  <p className="faint" style={{ fontSize: 13 }}>
+                    {t.aiHint}
+                  </p>
+                  <div className="field">
+                    <label htmlFor="aitheme">{t.aiThemeLabel}</label>
+                    <input
+                      id="aitheme"
+                      className="input"
+                      maxLength={120}
+                      placeholder={t.aiThemePlaceholder}
+                      value={aiTheme}
+                      onChange={(e) => setAiTheme(e.target.value)}
+                    />
+                  </div>
+                  {aiError && (
+                    <div className="banner banner-error">{aiError}</div>
+                  )}
+                  <div className="row">
+                    <button
+                      className="btn btn-primary"
+                      disabled={aiBusy || aiTheme.trim().length < 2}
+                      onClick={generateWithAi}
+                    >
+                      {aiBusy ? t.aiGenerating : t.aiGenerate}
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => setAiOpen(false)}
+                    >
+                      {no.common.cancel}
+                    </button>
+                  </div>
                 </div>
               )}
               {editorOpen && (
                 <div className="stack">
                   <h2 style={{ fontSize: 20 }}>{t.editorTitle}</h2>
+                  {aiRejected > 0 && (
+                    <div className="banner banner-info">
+                      ✨ {t.aiReviewHint} {t.aiRejectedNote(aiRejected)}
+                    </div>
+                  )}
                   <div className="field">
                     <label htmlFor="settitle">{t.editorNameLabel}</label>
                     <input

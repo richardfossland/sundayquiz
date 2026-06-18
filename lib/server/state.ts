@@ -14,7 +14,7 @@ import {
   PodiumEntry,
   TickerItem,
 } from "@/lib/dto";
-import { BoardRow, GameRow, MarkRow, PlayerRow, isFreeCell } from "@/lib/types";
+import { BoardRow, GameRow, MarkRow, PlayerRow, bingoConfig, isFreeCell } from "@/lib/types";
 import { listBoards, listMarks, listPlayers } from "@/lib/server/store";
 import { cellsNeeded } from "@/lib/server/boards";
 
@@ -112,7 +112,8 @@ export async function buildBoardState(game: GameRow): Promise<BoardState> {
   const activeBoardIds = new Set(
     boards.filter((b) => activePlayerIds.has(b.player_id)).map((b) => b.id),
   );
-  const fillablePerBoard = cellsNeeded(game.config.gridSize, game.config.freeCentre);
+  const cfg = bingoConfig(game);
+  const fillablePerBoard = cellsNeeded(cfg.gridSize, cfg.freeCentre);
   const confirmedOnActive = confirmed.filter((m) =>
     activeBoardIds.has(m.board_id),
   ).length;
@@ -131,7 +132,7 @@ export async function buildBoardState(game: GameRow): Promise<BoardState> {
     gameId: game.id,
     title: game.title,
     status: game.status,
-    config: game.config,
+    config: bingoConfig(game),
     joinPin: game.join_pin,
     roster: rosterOf(players),
     progress: {
@@ -214,7 +215,7 @@ export async function buildPlayerState(
     gameId: game.id,
     title: game.title,
     status: game.status,
-    config: game.config,
+    config: bingoConfig(game),
     roster: rosterOf(players),
     playerId: player.id,
     board: board

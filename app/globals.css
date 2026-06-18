@@ -922,3 +922,80 @@ textarea.input {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------- quiz mode ---------------- */
+/* Big-screen question tiles (4 Kahoot-style colours, live answer-count bar). */
+.quiz-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+}
+@media (max-width: 720px) {
+  .quiz-tiles { grid-template-columns: 1fr; }
+}
+.quiz-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 22px 22px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 96px;
+  font-weight: 700;
+  box-shadow: var(--shadow-2);
+}
+.quiz-tile.dim { opacity: 0.55; }
+.quiz-tile.correct { outline: 4px solid #fff; outline-offset: -4px; }
+.quiz-glyph { font-size: 26px; line-height: 1; }
+.quiz-opt { font-size: clamp(17px, 2vw, 24px); flex: 1; }
+.quiz-check { font-size: 30px; font-weight: 900; }
+.quiz-bar {
+  position: absolute;
+  left: 0; bottom: 0; height: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  transition: width 0.4s ease;
+}
+.quiz-count {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  opacity: 0.9;
+}
+.quiz-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: clamp(20px, 2.6vw, 30px);
+  color: var(--gold);
+  min-width: 64px;
+  text-align: right;
+}
+
+/* Participant answer grid (fat touch targets). */
+.quiz-answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.quiz-answer {
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 22px 14px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+  box-shadow: var(--shadow-2);
+}
+.quiz-answer:active:not(:disabled) { transform: scale(0.97); }
+.quiz-answer:disabled { cursor: default; }

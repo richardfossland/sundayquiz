@@ -144,6 +144,25 @@ export const no = {
     setUse: "Bruk dette",
     setCustomize: "Kopier og tilpass",
     setCreate: "Lag eget",
+    setAi: "✨ Lag med AI",
+    aiTitle: "Lag utsagn med AI",
+    aiThemeLabel: "Tema",
+    aiThemePlaceholder: "F.eks. «konfirmantleir», «menighetsweekend»",
+    aiHint:
+      "AI foreslår utsagn ut fra tema og samling. Du får et utkast du kan endre før du tar det i bruk — ingenting lagres automatisk.",
+    aiGenerate: "Lag forslag",
+    aiGenerating: "Lager forslag …",
+    aiUnavailable:
+      "AI er ikke tilgjengelig akkurat nå. Du kan fortsatt velge et ferdig sett eller lage ditt eget.",
+    aiRejectedNote: (n: number) =>
+      n === 0
+        ? ""
+        : `${n} forslag ble filtrert bort for å holde det varmt og ufarlig.`,
+    aiReviewHint:
+      "Sjekk gjennom forslagene og endre det du vil — så bruker du settet.",
+    aiError: "Klarte ikke å lage forslag nå. Prøv igjen eller skriv tema på nytt.",
+    aiEmpty:
+      "Fant ingen trygge forslag for dette temaet. Prøv et annet tema eller lag settet selv.",
     editorTitle: "Eget utsagnssett",
     editorNameLabel: "Navn på settet",
     editorHint:
@@ -170,6 +189,66 @@ export const no = {
     skipDefaults: "Bruk standardvalg",
     poolWarning: (pool: number, needed: number) =>
       `Settet har ${pool} utsagn — brettet trenger minst ${needed}.`,
+  },
+
+  quiz: {
+    // mode pick in the wizard
+    modeTitle: "Hva vil dere spille?",
+    modeBingo: "Bli-kjent-bingo",
+    modeBingoLead: "Finn folk i rommet som passer utsagnene. Sosialt.",
+    modeQuiz: "Quiz",
+    modeQuizLead: "Kahoot-stil: spørsmål på storskjermen, svar på mobilen.",
+    stepQuestionSet: "Velg spørsmålssett",
+    questionCount: (n: number) => (n === 1 ? "1 spørsmål" : `${n} spørsmål`),
+    perQuestionLabel: "Sekunder per spørsmål",
+    pointsLabel: "Poeng",
+    pointsSpeed: "Fart teller (raskere = mer)",
+    pointsFlat: "Likt for alle riktige",
+    editorTitle: "Eget spørsmålssett",
+    editorHint:
+      "Ett spørsmål per blokk: spørsmål, så fire svar, marker det riktige.",
+    addQuestion: "Legg til spørsmål",
+    promptLabel: "Spørsmål",
+    optionLabel: (n: number) => `Svar ${n}`,
+    markCorrect: "Riktig",
+    removeQuestion: "Fjern",
+    needOne: "Trenger minst ett ferdig spørsmål (4 svar, ett markert riktig).",
+    // host
+    start: "Start quizen",
+    nextQuestion: "Neste spørsmål",
+    firstQuestion: "Vis første spørsmål",
+    reveal: "Vis fasit",
+    end: "Avslutt quizen",
+    answered: (n: number, total: number) => `${n} av ${total} har svart`,
+    waitingFirst: "Trykk «Vis første spørsmål» når alle er klare.",
+    // board / participant
+    lobbyHeading: "Bli med i quizen!",
+    waitForStart: "Vent — verten starter quizen snart.",
+    questionOf: (n: number, total: number) => `Spørsmål ${n} av ${total}`,
+    timeLeft: (s: number) => `${s} s`,
+    timesUp: "Tiden er ute",
+    countAnswers: (n: number) => (n === 1 ? "1 svar" : `${n} svar`),
+    tapAnswer: "Trykk på svaret du tror er riktig.",
+    locked: "Svaret ditt er låst",
+    youPicked: "Du valgte",
+    correct: "Riktig!",
+    wrong: "Ikke riktig",
+    correctAnswer: "Riktig svar",
+    plusPoints: (n: number) => `+${n} poeng`,
+    yourScore: (n: number) => `${n} poeng`,
+    leaderboard: "Stillingen",
+    betweenLead: "Gjør dere klare til neste spørsmål …",
+    finishedHeading: "Slik gikk det",
+    winner: "Vinner",
+    waitingForQuestion: "Venter på neste spørsmål …",
+    errors: {
+      already_answered: "Du har allerede svart på dette spørsmålet.",
+      no_open_question: "Det er ikke noe åpent spørsmål akkurat nå.",
+      wrong_question: "Spørsmålet har endret seg — hent inn på nytt.",
+      game_not_live: "Quizen er ikke i gang.",
+      invalid_choice: "Ugyldig svar.",
+      generic: "Noe gikk galt. Prøv igjen.",
+    },
   },
 
   common: {

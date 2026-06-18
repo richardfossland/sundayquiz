@@ -3,7 +3,7 @@
 // the shell types stay untouched (spec §2).
 
 export type GameStatus = "lobby" | "live" | "finished";
-export type GameType = "bingo";
+export type GameType = "bingo" | "quiz";
 
 export type GridSize = 3 | 4 | 5;
 export type WinCondition = "line" | "two_lines" | "blackout";
@@ -39,6 +39,11 @@ export function isFreeCell(cell: BoardCell): cell is { free: true } {
 
 // ---------- DB row shapes (snake_case, as returned by PostgREST) ----------
 
+// `config` is type-specific: BingoConfig for bingo games, QuizConfig for quiz
+// games. Routing is by `game_type`; the per-mode code narrows config via the
+// bingoConfig()/quizConfig() helpers below.
+export type GameConfig = BingoConfig | import("./quiz-types").QuizConfig;
+
 export interface GameRow {
   id: string;
   join_pin: string;
@@ -46,10 +51,15 @@ export interface GameRow {
   game_type: GameType;
   title: string;
   status: GameStatus;
-  config: BingoConfig;
+  config: GameConfig;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
+}
+
+/** Narrow a bingo game's config (only valid when game_type === 'bingo'). */
+export function bingoConfig(game: GameRow): BingoConfig {
+  return game.config as BingoConfig;
 }
 
 export interface PlayerRow {
