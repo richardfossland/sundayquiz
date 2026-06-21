@@ -43,6 +43,14 @@ export function rateLimit(
 }
 
 export function clientIp(req: Request): string {
+  // Cloudflare sets CF-Connecting-IP to the real client IP and OVERWRITES any
+  // client-supplied value, so it can't be spoofed. X-Forwarded-For, by contrast,
+  // is caller-appendable — keying the per-IP rate limit on its first hop let an
+  // attacker dodge the limit (esp. the AI-generate endpoint) by rotating a fake
+  // hop. Prefer CF-Connecting-IP; fall back to the first XFF hop (other proxies /
+  // local dev), then a constant.
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf?.trim()) return cf.trim();
   const fwd = req.headers.get("x-forwarded-for");
   return fwd?.split(",")[0]?.trim() || "local";
 }
