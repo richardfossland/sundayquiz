@@ -28,20 +28,33 @@ export function getLlmClient(): LlmClient | null {
   if (!key) return null;
   return {
     async complete(body: unknown): Promise<unknown> {
-      const res = await fetch(ANTHROPIC_URL, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": key,
-          "anthropic-version": ANTHROPIC_VERSION,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        throw new Error(`anthropic_http_${res.status}: ${detail.slice(0, 200)}`);
+      // Bound the whole call — including the body read — with one AbortController
+      // (the suite-wide timedFetch gotcha). Without it, an Anthropic response
+      // that stalls after headers arrive would hang res.json() indefinitely and
+      // tie up the Worker invocation. Note the `await` on res.json(): the timer
+      // must still be armed while the body streams, so it is cleared in finally
+      // only after the read completes.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
+      try {
+        const res = await fetch(ANTHROPIC_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": key,
+            "anthropic-version": ANTHROPIC_VERSION,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const detail = await res.text().catch(() => "");
+          throw new Error(`anthropic_http_${res.status}: ${detail.slice(0, 200)}`);
+        }
+        return await res.json();
+      } finally {
+        clearTimeout(timeout);
       }
-      return res.json();
     },
   };
 }

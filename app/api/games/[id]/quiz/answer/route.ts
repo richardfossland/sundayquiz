@@ -25,7 +25,13 @@ export async function POST(req: Request, { params }: Params) {
     choice?: number;
   }>(req);
 
-  if (!rateLimit(`answer:${body?.playerId ?? clientIp(req)}`, 30, 60_000)) {
+  // Key the limiter on the un-spoofable client IP, NOT the client-supplied
+  // playerId — otherwise an attacker rotates fake playerId values to mint a
+  // fresh bucket per request and dodge the cap. (Score-forge is already
+  // impossible: submit_answer validates the player + enforces one answer per
+  // player/question. The limit is per game IP, generous for a shared-wifi
+  // classroom.)
+  if (!rateLimit(`answer:${id}:${clientIp(req)}`, 120, 60_000)) {
     return fail(429, "rate_limited");
   }
 
