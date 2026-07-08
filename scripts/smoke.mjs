@@ -30,6 +30,61 @@ async function req(method, path, body) {
 const post = (path, body) => req("POST", path, body);
 const get = (path) => req("GET", path);
 
+// Subscribe as anon on the PRIVATE `quiz:<gameId>` channel (same config as
+// lib/client/useChannel.ts), fire `action` once SUBSCRIBED (a real server
+// broadcast via the service_role REST call), and check that the given
+// `event` arrives — proving the realtime.messages RECEIVE policy from
+// 0007_realtime_authz isn't too tight (which would CHANNEL_ERROR and blank
+// every display/phone). Returns action's `.json` regardless, so callers can
+// still assert on the HTTP response. No-ops (and just runs `action`) when the
+// public Supabase env isn't set.
+const RT_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const RT_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+let rtSkipLogged = false;
+async function realtimePrivateReceiveCheck(gameId, event, action) {
+  if (!RT_URL || !RT_ANON) {
+    if (!rtSkipLogged) {
+      console.log("· skipping realtime receive check (set NEXT_PUBLIC_SUPABASE_URL + _ANON_KEY)");
+      rtSkipLogged = true;
+    }
+    const { json } = await action();
+    return json;
+  }
+
+  const { createClient } = await import("@supabase/supabase-js");
+  const sb = createClient(RT_URL, RT_ANON, { auth: { persistSession: false } });
+  let actionJson = null;
+  const received = await new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => {
+      if (!done) {
+        done = true;
+        resolve(v);
+      }
+    };
+    const ch = sb.channel(`quiz:${gameId}`, {
+      config: { broadcast: { self: false }, private: true },
+    });
+    ch.on("broadcast", { event }, () => finish(true));
+    ch.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        const { json } = await action();
+        actionJson = json;
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        finish(false);
+      }
+    });
+    setTimeout(() => finish(false), 8000);
+  });
+  check(
+    `anon private channel receives '${event}' broadcast`,
+    received === true,
+    "→ realtime.messages receive policy too tight OR private flag missing (displays/phones would blank)",
+  );
+  await sb.removeAllChannels();
+  return actionJson;
+}
+
 async function main() {
   console.log(`Smoke against ${BASE}`);
 
@@ -157,8 +212,17 @@ async function main() {
 
   // 8. Third confirm completes row 0 → bingo rank 1.
   const m2 = await claim("Anna", 2, "David");
-  const r2 = await respond("David", m2.json.markId, true);
-  check("bingo fires on line completion", r2.json?.bingo?.rank === 1, JSON.stringify(r2.json));
+
+  // 8a. Realtime RECEIVE over a PRIVATE channel: a real anon subscriber must
+  // still get the server's `bingo` broadcast after the realtime.messages RLS
+  // change (a too-tight policy → CHANNEL_ERROR → caught HERE before it blanks
+  // the board screen), and the respond() call itself still returns the bingo
+  // rank as before. Connects straight to Supabase, so it needs the public
+  // env; skipped when unset.
+  const r2 = await realtimePrivateReceiveCheck(gameId, "bingo", () =>
+    respond("David", m2.json.markId, true),
+  );
+  check("bingo fires on line completion", r2?.bingo?.rank === 1, JSON.stringify(r2));
   anna = await pstate("Anna");
   check("Anna board has bingoRank 1", anna.json?.board?.bingoRank === 1);
 

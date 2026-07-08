@@ -46,15 +46,19 @@ end $$;
 create extension if not exists pgcrypto;
 SQL
 
+# 0007_realtime_authz is guarded on realtime.messages presence → a clean
+# no-op on the vanilla postgres harness, but applied here to prove it parses
+# + is idempotent (scripts/smoke.mjs verifies the live receive behavior).
 echo "Applying migrations …"
-for f in 0001_schema.sql 0002_mark_rpcs.sql 0003_seed_sets.sql 0004_quiz_mode.sql 0004_seed_more_sets.sql 0005_seed_quiz_questions.sql 0006_host_owner.sql; do
+for f in 0001_schema.sql 0002_mark_rpcs.sql 0003_seed_sets.sql 0004_quiz_mode.sql 0004_seed_more_sets.sql 0005_seed_quiz_questions.sql 0006_host_owner.sql 0007_realtime_authz.sql; do
   echo "  - $f"
   PSQL < "$MIG/$f" >/dev/null
 done
 
-echo "Re-applying 0004 + 0006 (idempotency check) …"
+echo "Re-applying 0004 + 0006 + 0007 (idempotency check) …"
 PSQL < "$MIG/0004_quiz_mode.sql" >/dev/null
 PSQL < "$MIG/0006_host_owner.sql" >/dev/null
+PSQL < "$MIG/0007_realtime_authz.sql" >/dev/null
 
 echo "Running assertions …"
 PSQL <<'SQL'

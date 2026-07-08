@@ -21,7 +21,12 @@ export function useChannel(topic: string | null, onEvent: Handler) {
 
     const supabase = createClient();
     const channel = supabase.channel(topic, {
-      config: { broadcast: { self: false } },
+      // private: Realtime authorizes each subscriber against the
+      // realtime.messages RLS policy (migration 0007_realtime_authz). anon/
+      // authenticated may RECEIVE on quiz:* topics but cannot .send() forged
+      // events — closing the hole where a forged `bingo`/`mark_resolved`
+      // broadcast could show a fake winner or toast on the board/phones.
+      config: { broadcast: { self: false }, private: true },
     });
 
     channel.on("broadcast", { event: "*" }, (msg) => {
