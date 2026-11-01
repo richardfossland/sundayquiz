@@ -8,6 +8,7 @@ import { useGameState } from "@/lib/client/useGameState";
 import { QuizHostState } from "@/lib/dto";
 import { normalizeResumeCode } from "@/lib/codes";
 import { no } from "@/lib/locale/no";
+import { StorskjermButton } from "@/lib/client/storskjerm/StorskjermButton";
 import { Toast } from "@/app/components/Toast";
 
 const t = no.quiz;
@@ -141,9 +142,12 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
               {state.joinPin}
             </span>
           </div>
-          <Link href={`/board/${gameId}`} target="_blank" className="btn">
-            {no.host.showBoard}
-          </Link>
+          <div className="row" style={{ flexWrap: "wrap" }}>
+            <Link href={`/board/${gameId}`} target="_blank" className="btn">
+              {no.host.showBoard}
+            </Link>
+            <StorskjermButton tavleHref={`/board/${gameId}`} />
+          </div>
 
           {phase !== "ended" && state.status !== "finished" && (
             <div className="stack" style={{ gap: 10 }}>

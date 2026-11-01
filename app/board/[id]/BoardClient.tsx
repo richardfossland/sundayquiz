@@ -7,6 +7,13 @@ import { useGameState } from "@/lib/client/useGameState";
 import { usePresence } from "@/lib/client/usePresence";
 import { BoardState } from "@/lib/dto";
 import { no } from "@/lib/locale/no";
+import { StorskjermButton } from "@/lib/client/storskjerm/StorskjermButton";
+import { AvsluttKnapp } from "@/lib/client/storskjerm/AvsluttKnapp";
+import { usePresentasjon } from "@/lib/client/storskjerm/usePresentasjon";
+import { useHideCursor } from "@/lib/client/storskjerm/useHideCursor";
+import { useWakeLock } from "@/lib/client/storskjerm/useWakeLock";
+import { useFullskjermTast } from "@/lib/client/storskjerm/useFullskjermTast";
+import "@/lib/client/storskjerm/storskjerm.css";
 import { Confetti } from "@/app/components/Confetti";
 import { FinaleGraph } from "./FinaleGraph";
 
@@ -30,6 +37,12 @@ export function BoardClient({ gameId }: { gameId: string }) {
 
   // Presence: observe only (the board is not a player).
   const present = usePresence(gameId, null);
+  // `?visning=tavle`: ren skjerm for projektor/TV/cast. Tavla har ingen
+  // vertskontroller; i tavlevisning skjules bare «Vis på storskjerm».
+  const presentasjon = usePresentasjon();
+  useHideCursor(presentasjon);
+  useWakeLock(presentasjon);
+  useFullskjermTast(presentasjon);
 
   if (!state) {
     return (
@@ -40,7 +53,7 @@ export function BoardClient({ gameId }: { gameId: string }) {
   }
 
   return (
-    <main className="board-screen">
+    <main className={`board-screen${presentasjon ? " presentasjon" : ""}`}>
       <header className="spread">
         <span className="brandmark">
           <span className="glyph">▦</span>Sunday<b>Quiz</b>
@@ -50,12 +63,15 @@ export function BoardClient({ gameId }: { gameId: string }) {
             </span>
           )}
         </span>
-        <span className={`badge ${state.status === "live" ? "badge-live" : ""}`}>
-          {state.status === "live"
-            ? no.common.live
-            : state.status === "lobby"
-              ? no.common.lobby
-              : no.common.finished}
+        <span className="row" style={{ gap: 12 }}>
+          {!presentasjon && <StorskjermButton />}
+          <span className={`badge ${state.status === "live" ? "badge-live" : ""}`}>
+            {state.status === "live"
+              ? no.common.live
+              : state.status === "lobby"
+                ? no.common.lobby
+                : no.common.finished}
+          </span>
         </span>
       </header>
 
@@ -75,6 +91,7 @@ export function BoardClient({ gameId }: { gameId: string }) {
           </div>
         </div>
       )}
+      {presentasjon && <AvsluttKnapp />}
     </main>
   );
 }

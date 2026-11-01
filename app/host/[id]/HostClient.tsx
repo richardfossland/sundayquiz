@@ -8,6 +8,7 @@ import { useGameState } from "@/lib/client/useGameState";
 import { HostState } from "@/lib/dto";
 import { normalizeResumeCode } from "@/lib/codes";
 import { no } from "@/lib/locale/no";
+import { StorskjermButton } from "@/lib/client/storskjerm/StorskjermButton";
 import { Toast } from "@/app/components/Toast";
 
 const t = no.host;
@@ -168,6 +169,7 @@ export function HostClient({ gameId }: { gameId: string }) {
             <Link href={`/board/${gameId}`} target="_blank" className="btn">
               {t.showBoard}
             </Link>
+            <StorskjermButton tavleHref={`/board/${gameId}`} />
             {state.status === "lobby" && (
               <button className="btn btn-primary" disabled={busy} onClick={start}>
                 {t.start}
